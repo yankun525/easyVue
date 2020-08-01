@@ -1,0 +1,54 @@
+x<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div id="root">
+        <p>{{name}}</p>
+        <p>{{domain}}</p>
+        <p>{{parent.child}}</p>
+        <!-- <p>{{depment[0].name}}</p> -->
+    </div>
+    <script>
+        console.log(root)
+        var reg = /\{\{(.+?)\}\}/g
+        var tmpNode = document.querySelector('#root')
+        var data = {
+            name: 'kun.yan',
+            domain: 'kun.yan@geely.com',
+            parent: {
+                child: '业务战略开发部'
+            },
+            // depment: [{name: '开发二科'}]
+        }
+        function complier(tmpNode, data) {
+            var childNode = tmpNode.childNodes
+            for( var i = 0; i < childNode.length; i++) {
+                var type = childNode[i].nodeType
+                if (type == 3) {//文本节点
+                    var nodeValue = childNode[i].nodeValue
+                    nodeValue = childNode[i].nodeValue = nodeValue.replace(reg, (_, g) => {
+                        var prop,
+                            res = data,
+                            value = g.trim(),
+                            keyArr = value.split('.');
+                        while(prop = keyArr.shift()) {
+                            res = res[prop]
+                        }
+                        return res
+                    })
+                    childNode[i].nodeValue = nodeValue
+                } else if (type == 1) {//元素节点
+                    complier(childNode[i], data)
+                }
+            }
+        }
+        var app = root.cloneNode(true)
+        complier(app, data)
+        root.parentNode.replaceChild(app, tmpNode)
+    </script>
+</body>
+</html>
