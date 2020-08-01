@@ -1,4 +1,4 @@
-x<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -7,13 +7,12 @@ x<!DOCTYPE html>
 </head>
 <body>
     <div id="root">
-        <p>{{name}}</p>
-        <p>{{domain}}</p>
+        <p class="cc">{{name}}</p>
+        <p data-i18n="success.upload">{{domain}}</p>
         <p>{{parent.child}}</p>
         <!-- <p>{{depment[0].name}}</p> -->
     </div>
     <script>
-        console.log(root)
         var reg = /\{\{(.+?)\}\}/g
         var tmpNode = document.querySelector('#root')
         var data = {
@@ -24,31 +23,70 @@ x<!DOCTYPE html>
             },
             // depment: [{name: '开发二科'}]
         }
-        function complier(tmpNode, data) {
-            var childNode = tmpNode.childNodes
-            for( var i = 0; i < childNode.length; i++) {
-                var type = childNode[i].nodeType
-                if (type == 3) {//文本节点
-                    var nodeValue = childNode[i].nodeValue
-                    nodeValue = childNode[i].nodeValue = nodeValue.replace(reg, (_, g) => {
-                        var prop,
-                            res = data,
-                            value = g.trim(),
-                            keyArr = value.split('.');
-                        while(prop = keyArr.shift()) {
-                            res = res[prop]
-                        }
-                        return res
-                    })
-                    childNode[i].nodeValue = nodeValue
-                } else if (type == 1) {//元素节点
-                    complier(childNode[i], data)
-                }
+        // function complier(tmpNode, data) {
+        //     var childNode = tmpNode.childNodes
+        //     for( var i = 0; i < childNode.length; i++) {
+        //         var type = childNode[i].nodeType
+        //         if (type == 3) {//文本节点
+        //             var nodeValue = childNode[i].nodeValue
+        //             nodeValue = childNode[i].nodeValue = nodeValue.replace(reg, (_, g) => {
+        //                 var prop,
+        //                     res = data,
+        //                     value = g.trim(),
+        //                     keyArr = value.split('.');
+        //                 while(prop = keyArr.shift()) {
+        //                     res = res[prop]
+        //                 }
+        //                 return res
+        //             })
+        //             childNode[i].nodeValue = nodeValue
+        //         } else if (type == 1) {//元素节点
+        //             complier(childNode[i], data)
+        //         }
+        //     }
+        // }
+        class vNode {
+            constructor(tag, data, value, type) {
+                this.tag = tag ? tag.toLowerCase() : tag;
+                this.data = data;
+                this.type = type;
+                this.value = value;
+                this.children = [];
+            }
+            appendChild(vNode) {
+                this.children.push(vNode)
             }
         }
-        var app = root.cloneNode(true)
-        complier(app, data)
-        root.parentNode.replaceChild(app, tmpNode)
+        //生成虚拟DOM
+        function getVNode(node) {
+            let _vNode = null,
+                nodeType = node.nodeType;
+            if(nodeType === 1) {//元素
+                let _attrs = {},
+                    attrs = node.attributes,
+                    nodeName = node.nodeName,
+                    childNodes = node.childNodes;
+                    // if(elem_child[i].nodeName == "#text" && !/\s/.test(elem_child.nodeValue))
+                for (var i = 0; i < attrs.length; i++) {
+                    _attrs[attrs[i].nodeName] = attrs[i].nodeValue;
+                }
+                _vNode = new vNode(nodeName, _attrs, undefined, 1);
+                for (var i = 0; i < childNodes.length; i++) {
+                    _vNode.appendChild(getVNode(childNodes[i]));
+                }
+            } else if (nodeType === 3) {//文本节点
+                _vNode = new vNode(undefined, undefined, node.nodeValue, 1)
+            }
+            return _vNode;
+        }
+        //生成真实DOM
+        function parseVNode(VNode) {
+            
+        }
+        var app = getVNode(tmpNode);
+        console.log(app);
+        // complier(app, data)
+        // root.parentNode.replaceChild(app, tmpNode)
     </script>
 </body>
 </html>
