@@ -10,52 +10,32 @@
         <p class="cc">{{name}}</p>
         <p data-i18n="success.upload">{{domain}}</p>
         <p>{{parent.child}}</p>
-        <!-- <p>{{depment[0].name}}</p> -->
     </div>
     <script>
         var reg = /\{\{(.+?)\}\}/g
-        var tmpNode = document.querySelector('#root')
-        var data = {
-            name: 'kun.yan',
-            domain: 'kun.yan@geely.com',
-            parent: {
-                child: '业务战略开发部'
-            },
-            // depment: [{name: '开发二科'}]
-        }
-        // function complier(tmpNode, data) {
-        //     var childNode = tmpNode.childNodes
-        //     for( var i = 0; i < childNode.length; i++) {
-        //         var type = childNode[i].nodeType
-        //         if (type == 3) {//文本节点
-        //             var nodeValue = childNode[i].nodeValue
-        //             nodeValue = childNode[i].nodeValue = nodeValue.replace(reg, (_, g) => {
-        //                 var prop,
-        //                     res = data,
-        //                     value = g.trim(),
-        //                     keyArr = value.split('.');
-        //                 while(prop = keyArr.shift()) {
-        //                     res = res[prop]
-        //                 }
-        //                 return res
-        //             })
-        //             childNode[i].nodeValue = nodeValue
-        //         } else if (type == 1) {//元素节点
-        //             complier(childNode[i], data)
-        //         }
-        //     }
-        // }
+        /* @虚拟DOM构造函数 */
         class vNode {
             constructor(tag, data, value, type) {
-                this.tag = tag ? tag.toLowerCase() : tag;
                 this.data = data;
                 this.type = type;
                 this.value = value;
                 this.children = [];
+                this.tag = tag && tag.toLowerCase();
             }
             appendChild(vNode) {
                 this.children.push(vNode)
             }
+        }
+        //根据路劲访问对象成员
+        function getValueByPath(obj, path) {
+            var prop,
+                res = obj,
+                value = path,
+                keyArr = value.split('.');
+            while(prop = keyArr.shift()) {
+                res = res[prop]
+            }
+            return res
         }
         //生成虚拟DOM
         function getVNode(node) {
@@ -64,29 +44,80 @@
             if(nodeType === 1) {//元素
                 let _attrs = {},
                     attrs = node.attributes,
-                    nodeName = node.nodeName,
-                    childNodes = node.childNodes;
-                    // if(elem_child[i].nodeName == "#text" && !/\s/.test(elem_child.nodeValue))
+                    nodeName = node.nodeName;
                 for (var i = 0; i < attrs.length; i++) {
                     _attrs[attrs[i].nodeName] = attrs[i].nodeValue;
                 }
                 _vNode = new vNode(nodeName, _attrs, undefined, 1);
+                let childNodes = node.childNodes;
                 for (var i = 0; i < childNodes.length; i++) {
                     _vNode.appendChild(getVNode(childNodes[i]));
                 }
             } else if (nodeType === 3) {//文本节点
-                _vNode = new vNode(undefined, undefined, node.nodeValue, 1)
+                _vNode = new vNode(undefined, undefined, node.nodeValue, 3)
             }
             return _vNode;
         }
-        //生成真实DOM
-        function parseVNode(VNode) {
-            
+        //这个方法是把data和VNode结合
+        function combine(vnode, data) {
+            let _type = vnode.type;
+            let _data = vnode.data;
+            let _value = vnode.value;
+            let _children = vnode.children;
+            let _tag = vnode.tag;
+
+            let _vnode = null;
+            if (_type === 1) {//元素
+                _vnode = new vNode(_tag, _data, _value, _type);
+                _children.forEach(_subvnode => _vnode.appendChild(combine(_subvnode, data)));
+            } else if (_type === 3) {//文本节点
+                _value = _value.replace(reg, (_, g) => {
+                    return getValueByPath(data, g.trim())
+                });
+                _vnode = new vNode(_tag, _data, _value, _type);
+            }
+            return _vnode;
         }
-        var app = getVNode(tmpNode);
-        console.log(app);
-        // complier(app, data)
-        // root.parentNode.replaceChild(app, tmpNode)
+        /* @VUE构造函数 */
+        function YKVue(options) {
+            this._template = document.querySelector(options.el);//vue是字符串,这里是DOM
+            this._data = options.data;
+            this.mount();//挂载
+        }
+        /* @mount: 生成虚拟DOM 执行mountComponent函数 */
+        YKVue.prototype.mount = function () {
+            this.render = this.createRenderFn();
+            this.mountComponent();
+        }
+        YKVue.prototype.mountComponent = function () {
+            let mount = () => {
+                this.update(this.render())
+            }
+            mount.call(this);//本质应该交给watcher来调用
+        }
+        /* @render函数, 目的是缓存 AST抽象语法树 */
+        YKVue.prototype.createRenderFn = function () {
+            let ast = getVNode(this._template);//带有坑(插值没有被替换的)VNode
+            return function render () {
+                let _temp = combine(ast, this._data);
+                return _temp;
+            }
+        }
+        /* @将虚拟DOM渲染到页面, diff算法用在这里 */
+        YKVue.prototype.update = function () {
+
+        }
+
+        var app = new YKVue({
+            el: '#root',
+            data: {
+                name: 'kun.yan',
+                domain: 'kun.yan@geely.com',
+                parent: {
+                    child: '业务战略开发部'
+                }
+            }
+        })
     </script>
 </body>
 </html>
