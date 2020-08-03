@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        var arr = [0,1,2,3]
+        Array.prototype.filter1 = function () {
+            if(Object.prototype.toString.call(this) !== '[object Array]') return [];
+            var newArr = [],
+                fn = [].shift.call(arguments);
+            if (typeof fn !== 'function') return console.error('接收一个函数作为参数');
+            for (let i = 0; i < this.length; i++) {
+                let result = fn(this[i]);
+                if(result !== undefined) newArr.push(result);
+            }
+            return newArr;
+        }
+        var a = arr.filter1(i => i === 0);
+        console.log(a)
+
+    </script>
+</body>
+</html>

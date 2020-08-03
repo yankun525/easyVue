@@ -58,6 +58,27 @@
             }
             return _vNode;
         }
+        //转换成真正的DOM
+        function parseVNode(vnode) {
+            let type = vnode.type;
+            let _node = null;
+            if(type === 3) {
+                return document.createTextNode(vnode.value);
+            } else if (type === 1) {
+                _node = document.createElement(vnode.tag);
+                let data = vnode.data;
+                Object.keys(data).forEach(key => {
+                    let attrName = key;
+                    let attrValue = data[key];
+                    _node.setAttribute(attrName, attrValue);
+                });
+                let children = vnode.children;
+                children.forEach( subvnode => {
+                    _node.appendChild(parseVNode(subvnode))
+                });
+                return _node;
+            }
+        }
         //这个方法是把data和VNode结合
         function combine(vnode, data) {
             let _type = vnode.type;
@@ -117,7 +138,7 @@
                     child: '业务战略开发部'
                 }
             }
-        })
+        });
     </script>
 </body>
 </html>
